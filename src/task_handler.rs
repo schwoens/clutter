@@ -1,108 +1,83 @@
-use std::{io::{Stdout, Result}, path::Path, fs};
-use term::{Terminal, color};
+use std::{path::Path, fs};
 use crate::task::Task;
 use dirs;
 
 pub struct TaskHandler {
-    terminal: Box<dyn Terminal<Output = Stdout> + Send>,
     config: Config,
 }
 
 impl TaskHandler {
 
+    pub fn init() -> Result<Self, String> {
 
-    pub fn init(terminal: Box<dyn Terminal<Output = Stdout> + Send>) -> Self {
+        let config = match Config::load() {
+            Ok(c) => c,
+            Err(s) => return Err(s), 
+        };
 
-        let config = Config::load();
-
-        Self{terminal, config}
+        Ok(Self{config})
     }
 
-    pub fn handle_args(&mut self, args: Vec<String>) {
-        if !args.is_empty() {
-            match args[0].as_str() {
-                "edit" | "e" => self.edit(),
-                "complete" | "c" => {
-                    if args.len() > 1 {
-                        self.complete(&args[1]);
-                    }
-                },
-                "list" | "l" => self.list(),
-                _ => {
-                    self.println("Invalid arguments", Some(color::BRIGHT_RED))
-                },
-            }
-            return;
-        }
-        self.list();
-    }
-
-    fn edit(&mut self) {
+    pub fn edit(&self) {
         let mut path = self.config.datadir.clone();
         path.push_str("tasks.txt");
         match edit::edit_file(Path::new(&path)){
-            Err(_) => self.println("Error editing tasks", Some(color::BRIGHT_RED)),
+            Err(_) => std::process::exit(0),
             Ok(()) => (),
         }
     }
 
-    fn complete(&self, index: &str) {
+    pub fn complete(&self, index: &str) {
         todo!();
     }
 
-    fn list(&mut self) {
+    pub fn list(&self) {
+        let task_vec = match self.read_tasks(){
+            Some(v) => v,
+            None => return,
+        };
+        for i in 0..task_vec.len() {
+            println!("{} {}", i, task_vec[i]);
+        }
+    }
+
+    fn read_tasks(&self) -> Option<Vec<Task>> {
         let mut path = self.config.datadir.clone();
         path.push_str("tasks.txt");
-        let tasks = match fs::read_to_string(path) {
-            Ok(s) => s,
-            Err(_) => {
-                self.print("Could not find tasks file. Use ", Some(color::BRIGHT_RED));
-                self.print("clutter edit ", Some(color::BRIGHT_YELLOW));
-                self.println("to create one.", Some(color::BRIGHT_RED));
-                return;
-            }
+        let task_string = match fs::read_to_string(path) {
+            Ok(s) => Some(s),
+            Err(_) => return None,
         };
-
-        let task_vec = self.create_task_vec(tasks.split("\n"));
-        todo!();
+        self.create_task_vec(task_string.unwrap().split("\n").collect())
     }
 
-    fn create_task_vec(&self, tasks: core::str::Split<&str>) -> Vec<Task> {
-        for task in tasks {
+    fn create_task_vec(&self, strs: Vec<&str>) -> Option<Vec<Task>> {
+        let mut task_vec = vec![];
+        for str in strs {
+            match Task::from_string(str) {
+                Some(t) => task_vec.push(t),
+                None => return None,
+            }
         }
-        todo!();
+        Some(task_vec)
     }
 
     fn get_overdue(&self, task_vec: Vec<Task>) -> Vec<Task> {
-        todo!();
+        task_vec.into_iter()
+            .filter(|t| t.is_overdue())
+            .collect()
     }
 
     fn get_today(&self, task_vec: Vec<Task>) -> Vec<Task> {
-        todo!();
+        task_vec.into_iter()
+            .filter(|t| t.is_today())
+            .collect()
     }
 
     fn get_scheduled(&self, task_vec: Vec<Task>) -> Vec<Task> {
-        todo!();
-    }
-
-    fn get_unscheduled(&self, task_vec: Vec<Task>) -> Vec<Task> {
-        todo!();
-    }
-
-    fn println(&mut self, text: &str, color: Option<u32>) {
-        if color.is_some() {
-            self.terminal.fg(color.unwrap());
-        }
-        writeln!(self.terminal, "{}", text);
-        self.terminal.reset().unwrap();
-    }
-
-    fn print(&mut self, text: &str, color: Option<u32>) {
-        if color.is_some() {
-            self.terminal.fg(color.unwrap());
-        }
-        write!(self.terminal, "{}", text);
-        self.terminal.reset().unwrap();
+        task_vec.into_iter()
+            .filter(|t| t.is_future())
+            .collect()
     }
 }
 
@@ -111,44 +86,88 @@ struct Config {
 }
 
 impl Config {
-    fn load() -> Self {
+    fn load() -> Result<Self, String> {
 
-        let cdir_path = dirs::config_dir().unwrap();
+        let cdir_path = match dirs::config_dir() {
+            Some(p) => p,
+            None => return Err("Could not find config directory".to_string()),
+        };
         let mut cfile_path = cdir_path.to_str()
             .unwrap()
             .to_string();
-        cfile_path.push_str("/clutter/clutter.conf");
+        cfile_path.push_str("/clutter/");
 
-        let mut datadir = cdir_path.to_str()
+        // check if clutter config directory exists and create one if it doesn't
+        let mut metadata = match fs::metadata(&cfile_path) {
+            Ok(m) => Some(m),
+            Err(_) => None,
+        };
+        
+        if metadata.is_some() {
+            if !metadata.unwrap().is_dir() {
+                match fs::create_dir(Path::new(&cfile_path)) {
+                    Ok(_) => (),
+                    Err(e) => return Err(format!("Error while creating config directory: {}", e).to_string()),
+                }
+            }
+        } else {
+            match fs::create_dir(Path::new(&cfile_path)) {
+                Ok(_) => (),
+                Err(e) => return Err(format!("Error while creating config directory: {}", e).to_string()),
+            }
+        }
+
+
+        //check if clutter config file exists
+        cfile_path.push_str("/clutter.conf");
+        metadata = match fs::metadata(&cfile_path) {
+            Ok(m) => Some(m),
+            Err(_) => None,
+        };
+
+        if metadata.is_some() {
+            if metadata.unwrap().is_file() {
+                match Self::read_config(&cfile_path) {
+                    Ok(s) => return Ok(s),
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+        match fs::File::create(&cfile_path) {
+            Ok(_) => (),
+            Err(e) => return Err(format!("Error while creating config file: {}", e).to_string()),
+        }
+        match Self::read_config(&cfile_path) {
+            Ok(s) => Ok(s),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn read_config(path: &str) -> Result<Self, String> {
+
+        // default data directory
+        let mut datadir = dirs::config_dir()
+            .unwrap()
+            .to_str()
             .unwrap()
             .to_string();
         datadir.push_str("/clutter/tasks.txt");
 
-        let configs = fs::read_to_string(cfile_path);
-        for config_line in configs {
+        let config_string = match fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => return Err(format!("Error while reading clutter.conf: {}", e).to_string()),
+        };
+        for config_line in config_string.lines() {
             let config = match config_line.split_once("=") {
                 Some(s) => s,
-                None => {
-                    Self::syntax_error();
-                    std::process::exit(0);
-                },
+                None => return Err("Syntax error in clutter.conf".to_string()),
             };
-            
+
             match config.0 {
                 "datadir" => datadir = config.1.to_string(),
-                _ => {
-                    Self::syntax_error();
-                    std::process::exit(0);
-                },
+                _ => return Err("Syntax error in clutter.conf".to_string()),
             }
         }
-        Self{datadir}
-    }
-
-    fn syntax_error() {
-        let mut t = term::stdout().unwrap();
-        t.fg(color::BRIGHT_RED);
-        writeln!(t, "Syntax error in clutter.conf");
-        t.reset().unwrap();
+        Ok(Self{datadir})
     }
 }
