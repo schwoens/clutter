@@ -1,4 +1,4 @@
-use std::{path::Path, fs};
+use std::{path::Path, fs, process};
 use crate::task::Task;
 use dirs;
 
@@ -18,12 +18,27 @@ impl TaskHandler {
         Ok(Self{config})
     }
 
-    pub fn edit(&self) {
-        let mut path = self.config.datadir.clone();
+    pub fn edit(&self) -> Result<(), String>{
+        let mut path = self.config.datadir.as_str().to_string();
         path.push_str("tasks.txt");
-        match edit::edit_file(Path::new(&path)){
-            Err(_) => std::process::exit(0),
-            Ok(()) => (),
+
+        if self.config.editor.as_str() == "" {
+            // open in default editor
+            match edit::edit_file(Path::new(&path)){
+                Err(e) => return Err(format!("Error while trying to edit tasks.txt: {}", e)),
+                Ok(()) => Ok(()),
+            }
+        } else {
+            // open in prefered editor
+            match process::Command::new(&self.config.editor)
+                .arg(path) 
+                .stdin(process::Stdio::inherit())
+                .stdout(process::Stdio::inherit())
+                .stderr(process::Stdio::inherit())
+                .output() {
+                    Ok(_) => Ok(()),
+                    Err(e) => return Err(format!("Error while trying to edit task.txt: {}", e)),
+                }
         }
     }
 
@@ -31,35 +46,40 @@ impl TaskHandler {
         todo!();
     }
 
-    pub fn list(&self) {
+    pub fn list(&self) -> Result<String, String> {
         let task_vec = match self.read_tasks(){
-            Some(v) => v,
-            None => return,
+            Ok(v) => v,
+            Err(e) => return Err(e),
         };
+
+        let mut output = "".to_string();
         for i in 0..task_vec.len() {
-            println!("{} {}", i, task_vec[i]);
+            output.push_str(&format!("{} {}\n", i, task_vec[i]))
         }
+        Ok(output)
     }
 
-    fn read_tasks(&self) -> Option<Vec<Task>> {
+    fn read_tasks(&self) -> Result<Vec<Task>, String> {
         let mut path = self.config.datadir.clone();
         path.push_str("tasks.txt");
         let task_string = match fs::read_to_string(path) {
             Ok(s) => Some(s),
-            Err(_) => return None,
+            Err(e) => return Err(format!("Error while reading tasks.txt: {}", e)),
         };
         self.create_task_vec(task_string.unwrap().split("\n").collect())
     }
 
-    fn create_task_vec(&self, strs: Vec<&str>) -> Option<Vec<Task>> {
+    fn create_task_vec(&self, strs: Vec<&str>) -> Result<Vec<Task>, String> {
         let mut task_vec = vec![];
         for str in strs {
-            match Task::from_string(str) {
-                Some(t) => task_vec.push(t),
-                None => return None,
+            if str != "" {
+                match Task::from_string(str) {
+                    Ok(t) => task_vec.push(t),
+                    Err(e) => return Err(e),
+                }
             }
         }
-        Some(task_vec)
+        Ok(task_vec)
     }
 
     fn get_overdue(&self, task_vec: Vec<Task>) -> Vec<Task> {
@@ -83,6 +103,7 @@ impl TaskHandler {
 
 struct Config {
     datadir: String,
+    editor: String,
 }
 
 impl Config {
@@ -145,13 +166,17 @@ impl Config {
 
     fn read_config(path: &str) -> Result<Self, String> {
 
-        // default data directory
+        // defaults
         let mut datadir = dirs::config_dir()
             .unwrap()
             .to_str()
             .unwrap()
             .to_string();
-        datadir.push_str("/clutter/tasks.txt");
+        datadir.push_str("/clutter/");
+
+        let mut editor = "".to_string();
+
+        
 
         let config_string = match fs::read_to_string(path) {
             Ok(c) => c,
@@ -165,9 +190,10 @@ impl Config {
 
             match config.0 {
                 "datadir" => datadir = config.1.to_string(),
+                "editor" => editor = config.1.to_string(),
                 _ => return Err("Syntax error in clutter.conf".to_string()),
             }
         }
-        Ok(Self{datadir})
+        Ok(Self{datadir, editor})
     }
 }

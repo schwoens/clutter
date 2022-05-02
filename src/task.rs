@@ -10,28 +10,27 @@ pub struct Task {
 
 impl Task {
 
-    pub fn from_string(string: &str) -> Option<Self> {
+    pub fn from_string(string: &str) -> Result<Self, String> {
 
         // get completed
-        let split= match string.split_once(" ") {
+        let split= match string.split_once("] ") {
             Some(s) => s,
-            None => return None,
+            None => return Err("Syntax error in tasks.txt".to_string()),
         };
         let completed = split.0.contains("x"); 
 
         // get due-date
         let split = match split.1.split_once(": ") {
             Some(s) => s,
-            None => return None,
+            None => return Err("Syntax error in tasks.txt".to_string()),
         };
-        let due_date = match NaiveDate::parse_from_str(split.0, "%y %m %d") {
+        let due_date = match NaiveDate::parse_from_str(split.0, "%Y %m %d") {
             Ok(d) => d,
-            Err(_) => return None,
+            Err(e) => return Err(format!("Error while parsing task: {}", e)),
         };
 
         let description = split.1.to_string();
-
-        Some(Self{description, due_date, completed})
+        Ok(Self{description, due_date, completed})
 
     }
 

@@ -21,9 +21,12 @@ fn main() {
 }
 
 fn handle_args(task_handler: TaskHandler, args: Vec<String>) {
-    if args.len() > 2 {
+    if args.len() > 1 {
         match args[1].as_str() {
-            "edit" | "e" => task_handler.edit(),
+            "edit" | "e" => match task_handler.edit() {
+                Ok(_) => (),
+                Err(e) => print_error(e),
+            },
             "complete" | "c" => {
                 if args.len() < 3 {
                     print_error("Missing argument <identifier>".to_string());
@@ -31,14 +34,21 @@ fn handle_args(task_handler: TaskHandler, args: Vec<String>) {
                 }
                 task_handler.complete(&args[2]);
             },
-            "list" | "l" | "" => task_handler.list(),
+            "list" | "l" | "" => match task_handler.list() {
+                Ok(o) => println!("{}", o),
+                Err(e) => print_error(e),
+            },
             _ => {
                 print_error("Invalid arguments".to_string());
                 std::process::exit(0);
             },
         }
+    } else {
+        match task_handler.list() {
+            Ok(o) => println!("{}", o),
+            Err(e) => print_error(e),
+        };
     }
-    task_handler.list();
 }
 
 fn print_error(message: String) {
@@ -47,6 +57,7 @@ fn print_error(message: String) {
     writeln!(t, "{}", message).unwrap();
     t.reset().unwrap();
 }
+
 
 
 
