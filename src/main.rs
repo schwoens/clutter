@@ -32,7 +32,10 @@ fn handle_args(task_handler: TaskHandler, args: Vec<String>) {
                     print_error("Missing argument <identifier>".to_string());
                     return;
                 }
-                task_handler.complete(&args[2]);
+                match task_handler.complete(&args[2]) {
+                    Ok(_) => (),
+                    Err(e) => print_error(e),
+                }
             },
             "list" | "l" | "" => match task_handler.list() {
                 Ok(o) => println!("{}", o),

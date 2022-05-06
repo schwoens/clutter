@@ -1,4 +1,4 @@
-use std::{path::Path, fs, process};
+use std::{path::Path, fs, process, io::Write};
 use crate::task::Task;
 use dirs;
 
@@ -42,15 +42,36 @@ impl TaskHandler {
         }
     }
 
-    pub fn complete(&self, index: &str) {
-        todo!();
+    pub fn complete(&self, index: &str) -> Result<(), String> {
+        let i = match index.parse::<usize>() {
+            Ok(i) => i,
+            Err(e) => return Err(format!("Error while trying to complete task: {}", e)),
+        };
+        let mut task_string = "[ ] ".to_string();
+        task_string.push_str(&(self.create_task_vec()?[i].to_string()));
+
+        let mut tasks: String = self.read_tasks()?
+            .lines()
+            .filter(|s| s != &task_string)
+            .collect();
+        task_string = task_string.replace("[ ]", "[x]");
+        tasks.push_str(&task_string);
+
+        // write tasks.txt
+        let mut path = self.config.datadir.clone();
+        path.push_str("tasks.txt");
+        let mut file = match fs::File::create(path) {
+            Ok(f) => f,
+            Err(e) => return Err(format!("Error while opening tasks.txt: {}", e)),
+        };
+        match file.write_all(tasks.as_bytes()) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Error while writing tasks.txt: {}", e)),
+        }
     }
 
     pub fn list(&self) -> Result<String, String> {
-        let task_vec = match self.read_tasks(){
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        let task_vec = self.create_task_vec()?;
 
         let mut output = "".to_string();
         for i in 0..task_vec.len() {
@@ -59,19 +80,20 @@ impl TaskHandler {
         Ok(output)
     }
 
-    fn read_tasks(&self) -> Result<Vec<Task>, String> {
+    fn read_tasks(&self) -> Result<String, String> {
         let mut path = self.config.datadir.clone();
         path.push_str("tasks.txt");
-        let task_string = match fs::read_to_string(path) {
-            Ok(s) => Some(s),
+        match fs::read_to_string(path) {
+            Ok(s) => Ok(s),
             Err(e) => return Err(format!("Error while reading tasks.txt: {}", e)),
-        };
-        self.create_task_vec(task_string.unwrap().split("\n").collect())
+        }
     }
 
-    fn create_task_vec(&self, strs: Vec<&str>) -> Result<Vec<Task>, String> {
+    fn create_task_vec(&self) -> Result<Vec<Task>, String> {
+        
+        let task_string = self.read_tasks()?;
         let mut task_vec = vec![];
-        for str in strs {
+        for str in task_string.lines() {
             if str != "" {
                 match Task::from_string(str) {
                     Ok(t) => task_vec.push(t),

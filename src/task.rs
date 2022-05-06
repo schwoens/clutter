@@ -31,7 +31,6 @@ impl Task {
 
         let description = split.1.to_string();
         Ok(Self{description, due_date, completed})
-
     }
 
     pub fn is_overdue(&self) -> bool {
@@ -50,6 +49,6 @@ impl Task {
 impl Display for Task {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.due_date.to_string(), self.description)
+        write!(f, "{}: {}", self.due_date.format("%Y %m %d"), self.description)
     }
 }
