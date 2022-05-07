@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use chrono::{self, Local, NaiveDate};
 
+#[derive(Clone)]
 pub struct Task {
     description: String,
     due_date: NaiveDate,
@@ -43,6 +44,10 @@ impl Task {
 
     pub fn is_future(&self) -> bool {
         self.due_date > Local::now().date().naive_local()
+    }
+
+    pub fn is_completed(&self) -> bool {
+        self.completed
     }
 }
 
