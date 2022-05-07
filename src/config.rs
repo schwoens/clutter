@@ -8,6 +8,7 @@ pub struct Config {
     pub overdue_color: Color,
     pub today_color: Color,
     pub scheduled_color: Color,
+    pub completed_color: Color,
 }
 
 impl Config {
@@ -83,6 +84,7 @@ impl Config {
         let mut overdue_color = color::RED;
         let mut today_color = color::YELLOW;
         let mut scheduled_color = color::CYAN;
+        let mut completed_color = color::GREEN;
         
         let config_string = match fs::read_to_string(path) {
             Ok(c) => c,
@@ -100,10 +102,11 @@ impl Config {
                 "overdue_color" => overdue_color = Self::match_color(config.1)?,
                 "today_color" => today_color = Self::match_color(config.1)?,
                 "scheduled_color" => scheduled_color = Self::match_color(config.1)?,
+                "completed_color" => completed_color = Self::match_color(config.1)?,
                 _ => return Err("Syntax error in clutter.conf".to_string()),
             }
         }
-        Ok(Self{datadir, editor, overdue_color, today_color, scheduled_color})
+        Ok(Self{datadir, editor, overdue_color, today_color, scheduled_color, completed_color})
     }
 
     fn match_color(string: &str) -> Result<u32, String> {

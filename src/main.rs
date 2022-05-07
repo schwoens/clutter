@@ -44,25 +44,29 @@ impl Clutter {
     fn handle_args(&mut self, args: Vec<String>) -> Result<(), String> {
         if args.len() > 1 {
             match args[1].as_str() {
-                "l" | "list" => self.list(),
+                "l" | "list" => {
+                    let mut show_completed = false;
+                    if args.len() > 2 {
+                        show_completed = args[2] == "--show_completed" || args[2] == "-c";
+                    }
+                    self.list(show_completed)
+                },
                 "e" | "edit" => self.edit(),
                 _ => Err("Invalid argument".to_string())
             }
         } else {
-            self.list()
+            self.list(false)
         }
     }
 
-    pub fn list(&mut self) -> Result<(), String> {
+    pub fn list(&mut self, show_completed: bool) -> Result<(), String> {
         self.task_handler.load_tasks()?;
 
-        //Self::print_string("Overdue:".to_string(), color::RED);
+        if show_completed {
+            self.print_all(self.task_handler.get_completed(), self.config.completed_color);
+        }
         self.print_all(self.task_handler.get_overdue(), self.config.overdue_color);
-
-        //Self::print_string("Today:".to_string(), color::YELLOW);
         self.print_all(self.task_handler.get_today(), self.config.today_color);
-        
-        //Self::print_string("Scheduled:".to_string(), color::GREEN);
         self.print_all(self.task_handler.get_scheduled(), self.config.scheduled_color);
         Ok(())
     }

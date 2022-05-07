@@ -60,4 +60,11 @@ impl TaskHandler {
             .filter(|t| t.is_future() && !t.is_completed())
             .collect()
     }
+
+    pub fn get_completed(&self) -> Vec<Task> {
+        self.tasks.clone()
+            .into_iter()
+            .filter(|t| t.is_completed())
+            .collect()
+    }
 }

@@ -63,6 +63,11 @@ impl Display for Task {
             due_date_string = "yesterday".to_string();
         }
 
-        write!(f, "{}: {}", due_date_string, self.description)
+        let mut cross = "";
+        if self.completed {
+            cross = "✓ ";
+        }
+
+        write!(f, "{}{}: {}", cross, due_date_string, self.description)
     }
 }
