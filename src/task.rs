@@ -54,6 +54,15 @@ impl Task {
 impl Display for Task {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.due_date.format("%Y %m %d"), self.description)
+        let mut due_date_string = self.due_date.format("%Y %m %d").to_string();
+        if self.due_date == Local::now().date().naive_local() {
+            due_date_string = "today".to_string();
+        } else if self.due_date == Local::now().date().naive_local().succ() {
+            due_date_string = "tomorrow".to_string();
+        } else if self.due_date == Local::now().date().naive_local().pred() {
+            due_date_string = "yesterday".to_string();
+        }
+
+        write!(f, "{}: {}", due_date_string, self.description)
     }
 }
