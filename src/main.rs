@@ -57,13 +57,13 @@ impl Clutter {
         self.task_handler.load_tasks()?;
 
         //Self::print_string("Overdue:".to_string(), color::RED);
-        self.print_all(self.task_handler.get_overdue(), color::RED);
+        self.print_all(self.task_handler.get_overdue(), self.config.overdue_color);
 
         //Self::print_string("Today:".to_string(), color::YELLOW);
-        self.print_all(self.task_handler.get_today(), color::YELLOW);
+        self.print_all(self.task_handler.get_today(), self.config.today_color);
         
         //Self::print_string("Scheduled:".to_string(), color::GREEN);
-        self.print_all(self.task_handler.get_scheduled(), color::GREEN);
+        self.print_all(self.task_handler.get_scheduled(), self.config.scheduled_color);
         Ok(())
     }
 

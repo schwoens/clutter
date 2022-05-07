@@ -1,8 +1,13 @@
 use std::{fs, path::Path};
 
+use term::{color::Color, color};
+
 pub struct Config {
     pub datadir: String,
     pub editor: String,
+    pub overdue_color: Color,
+    pub today_color: Color,
+    pub scheduled_color: Color,
 }
 
 impl Config {
@@ -75,8 +80,10 @@ impl Config {
 
         let mut editor = "".to_string();
 
+        let mut overdue_color = color::RED;
+        let mut today_color = color::YELLOW;
+        let mut scheduled_color = color::CYAN;
         
-
         let config_string = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(e) => return Err(format!("Error while reading clutter.conf: {}", e).to_string()),
@@ -90,9 +97,34 @@ impl Config {
             match config.0 {
                 "datadir" => datadir = config.1.to_string(),
                 "editor" => editor = config.1.to_string(),
+                "overdue_color" => overdue_color = Self::match_color(config.1)?,
+                "today_color" => today_color = Self::match_color(config.1)?,
+                "scheduled_color" => scheduled_color = Self::match_color(config.1)?,
                 _ => return Err("Syntax error in clutter.conf".to_string()),
             }
         }
-        Ok(Self{datadir, editor})
+        Ok(Self{datadir, editor, overdue_color, today_color, scheduled_color})
+    }
+
+    fn match_color(string: &str) -> Result<u32, String> {
+        match string.to_lowercase().as_str() {
+            "black" => Ok(color::BLACK),
+            "blue" => Ok(color::BLUE),
+            "bright_black" => Ok(color::BRIGHT_BLACK),
+            "bright_blue" => Ok(color::BRIGHT_BLUE),
+            "bright_cyan" => Ok(color::BRIGHT_CYAN),
+            "bright_green" => Ok(color::BRIGHT_GREEN),
+            "bright_magenta" => Ok(color::BRIGHT_MAGENTA),
+            "bright_red" => Ok(color::BRIGHT_RED),
+            "bright_white" => Ok(color::BRIGHT_WHITE),
+            "bright_yellow" => Ok(color::BRIGHT_YELLOW),
+            "cyan" => Ok(color::CYAN),
+            "green" => Ok(color::GREEN),
+            "magenta" => Ok(color::MAGENTA),
+            "red" => Ok(color::RED),
+            "white" => Ok(color::WHITE),
+            "yellow" => Ok(color::YELLOW),
+            _ => Err("Invalid color in clutter.conf".to_string())
+        }
     }
 }
