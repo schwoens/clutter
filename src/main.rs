@@ -46,28 +46,37 @@ impl Clutter {
             match args[1].as_str() {
                 "l" | "list" => {
                     let mut show_completed = false;
-                    if args.len() > 2 {
-                        show_completed = args[2] == "--show_completed" || args[2] == "-c";
+                    let mut only_today = false;
+                    for i in 1..args.len() {
+                        match args[i].as_str() {
+                            "--show_completed" | "-c" => show_completed = true,
+                            "--today" | "-t" => only_today = true,
+                            _ => (),
+                        }
                     }
-                    self.list(show_completed)
+                    self.list(show_completed, only_today)
                 },
                 "e" | "edit" => self.edit(),
                 _ => Err("Invalid argument".to_string())
             }
         } else {
-            self.list(false)
+            self.list(false, false)
         }
     }
 
-    pub fn list(&mut self, show_completed: bool) -> Result<(), String> {
+    pub fn list(&mut self, show_completed: bool, only_today: bool) -> Result<(), String> {
         self.task_handler.load_tasks()?;
 
         if show_completed {
-            self.print_all(self.task_handler.get_completed(), self.config.completed_color);
+            self.print_all(self.task_handler.get_completed(only_today), self.config.completed_color);
         }
-        self.print_all(self.task_handler.get_overdue(), self.config.overdue_color);
+        if !only_today {
+            self.print_all(self.task_handler.get_overdue(), self.config.overdue_color);
+        }
         self.print_all(self.task_handler.get_today(), self.config.today_color);
-        self.print_all(self.task_handler.get_scheduled(), self.config.scheduled_color);
+        if !only_today {
+            self.print_all(self.task_handler.get_scheduled(), self.config.scheduled_color);
+        }
         Ok(())
     }
 

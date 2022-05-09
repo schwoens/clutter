@@ -64,11 +64,20 @@ impl TaskHandler {
             .collect()
     }
 
-    pub fn get_completed(&self) -> Vec<Task> {
-        let mut completed = self.tasks.clone();
+    pub fn get_completed(&self, only_today: bool) -> Vec<Task> {
+        let mut completed =self.tasks.clone();
+
         completed.sort();
-        completed.into_iter()
-            .filter(|t| t.is_completed())
-            .collect()
+
+        if only_today {
+            completed.into_iter()
+                .filter(|t| t.is_completed() && t.is_today())
+                .collect()
+            
+        } else {
+            completed.into_iter()
+                .filter(|t| t.is_completed())
+                .collect()
+        }
     }
 }
