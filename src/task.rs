@@ -71,3 +71,24 @@ impl Display for Task {
         write!(f, "{}{}: {}", cross, due_date_string, self.description)
     }
 }
+
+impl PartialEq for Task {
+    fn eq(&self, other: &Self) -> bool {
+        self.due_date == other.due_date
+    }
+
+}
+
+impl Eq for Task {}
+
+impl PartialOrd for Task {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.due_date.cmp(&other.due_date))
+    }
+}
+
+impl Ord for Task {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.due_date.cmp(&other.due_date)
+    }
+}

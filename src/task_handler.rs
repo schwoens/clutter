@@ -41,29 +41,33 @@ impl TaskHandler {
     }
 
     pub fn get_overdue(&self) -> Vec<Task> {
-        self.tasks.clone()
-            .into_iter()
+        let mut overdue = self.tasks.clone();
+        overdue.sort();
+        overdue.into_iter()
             .filter(|t| t.is_overdue() && !t.is_completed())
             .collect()
     }
 
     pub fn get_today(&self) -> Vec<Task> {
-        self.tasks.clone()
-            .into_iter()
+        let mut today = self.tasks.clone();
+        today.sort();
+        today.into_iter()
             .filter(|t| t.is_today() && !t.is_completed())
             .collect()
     }
 
     pub fn get_scheduled(&self) -> Vec<Task> {
-        self.tasks.clone()
-            .into_iter()
+        let mut scheduled = self.tasks.clone();
+        scheduled.sort();
+        scheduled.into_iter()
             .filter(|t| t.is_future() && !t.is_completed())
             .collect()
     }
 
     pub fn get_completed(&self) -> Vec<Task> {
-        self.tasks.clone()
-            .into_iter()
+        let mut completed = self.tasks.clone();
+        completed.sort();
+        completed.into_iter()
             .filter(|t| t.is_completed())
             .collect()
     }
