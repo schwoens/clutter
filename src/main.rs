@@ -92,10 +92,11 @@ impl Clutter {
             None => return Err("Invalid argument".to_string()),
         };
         self.task_handler.add_task(due_date, description)?;
+        self.list(false, false)?;
         Ok(())
     }
 
-    pub fn edit(&self) -> Result<(), String> {
+    pub fn edit(&mut self) -> Result<(), String> {
         let mut path = self.config.datadir.as_str().to_string();
         path.push_str("tasks.txt");
 
@@ -103,8 +104,8 @@ impl Clutter {
             // open in default editor
             match edit::edit_file(Path::new(&path)){
                 Err(e) => return Err(format!("Error while trying to edit tasks.txt: {}", e)),
-                Ok(()) => Ok(()),
-            }
+                Ok(_) => (),
+            };
         } else {
             // open in prefered editor
             match process::Command::new(&self.config.editor)
@@ -113,10 +114,12 @@ impl Clutter {
                 .stdout(process::Stdio::inherit())
                 .stderr(process::Stdio::inherit())
                 .output() {
-                    Ok(_) => Ok(()),
+                    Ok(_) => (),
                     Err(e) => return Err(format!("Error while trying to edit tasks.txt: {}", e)),
-                }
+                };
         }
+        self.list(false, false)?;
+        Ok(())
     }
 
 
