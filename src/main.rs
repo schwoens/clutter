@@ -37,7 +37,7 @@ impl Clutter {
 
     fn init() -> Result<Self, String> {
         let config = Config::load()?;
-        let task_handler = TaskHandler::new(config.datadir.clone())?;
+        let task_handler = TaskHandler::new(config.datadir.clone(), config.date_format.clone())?;
         Ok(Self{config, task_handler})
     }
 

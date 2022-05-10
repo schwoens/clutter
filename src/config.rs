@@ -5,6 +5,7 @@ use term::{color::Color, color};
 pub struct Config {
     pub datadir: String,
     pub editor: String,
+    pub date_format: String,
     pub overdue_color: Color,
     pub today_color: Color,
     pub scheduled_color: Color,
@@ -81,6 +82,8 @@ impl Config {
 
         let mut editor = "".to_string();
 
+        let mut date_format = "%Y-%m-%d".to_string();
+
         let mut overdue_color = color::RED;
         let mut today_color = color::YELLOW;
         let mut scheduled_color = color::CYAN;
@@ -99,6 +102,7 @@ impl Config {
             match config.0 {
                 "datadir" => datadir = config.1.to_string(),
                 "editor" => editor = config.1.to_string(),
+                "date_format" => date_format = config.1.to_string(),
                 "overdue_color" => overdue_color = Self::match_color(config.1)?,
                 "today_color" => today_color = Self::match_color(config.1)?,
                 "scheduled_color" => scheduled_color = Self::match_color(config.1)?,
@@ -106,7 +110,7 @@ impl Config {
                 _ => return Err("Syntax error in clutter.conf".to_string()),
             }
         }
-        Ok(Self{datadir, editor, overdue_color, today_color, scheduled_color, completed_color})
+        Ok(Self{datadir, editor, date_format, overdue_color, today_color, scheduled_color, completed_color})
     }
 
     fn match_color(string: &str) -> Result<u32, String> {

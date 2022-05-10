@@ -7,11 +7,12 @@ pub struct Task {
     description: String,
     due_date: NaiveDate,
     completed: bool,
+    date_format: String,
 }
 
 impl Task {
 
-    pub fn from_string(string: &str) -> Result<Self, String> {
+    pub fn from_string(string: &str, date_format: String) -> Result<Self, String> {
 
         // get completed
         let split= match string.split_once("] ") {
@@ -25,13 +26,13 @@ impl Task {
             Some(s) => s,
             None => return Err("Syntax error in tasks.txt".to_string()),
         };
-        let due_date = match NaiveDate::parse_from_str(split.0, "%Y %m %d") {
+        let due_date = match NaiveDate::parse_from_str(split.0, "%Y-%m-%d") {
             Ok(d) => d,
             Err(e) => return Err(format!("Error while parsing task: {}", e)),
         };
 
         let description = split.1.to_string();
-        Ok(Self{description, due_date, completed})
+        Ok(Self{description, due_date, completed, date_format})
     }
 
     pub fn is_overdue(&self) -> bool {
@@ -54,7 +55,7 @@ impl Task {
 impl Display for Task {
 
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut due_date_string = self.due_date.format("%Y %m %d").to_string();
+        let mut due_date_string = self.due_date.format(&self.date_format).to_string();
         if self.due_date == Local::now().date().naive_local() {
             due_date_string = "today".to_string();
         } else if self.due_date == Local::now().date().naive_local().succ() {

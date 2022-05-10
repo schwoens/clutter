@@ -4,12 +4,13 @@ use crate::task::Task;
 pub struct TaskHandler {
     tasks: Vec<Task>,
     datadir: String,
+    date_format: String,
 }
 
 impl TaskHandler {
 
-    pub fn new(datadir: String) -> Result<Self, String> {
-        Ok(Self{tasks: vec![], datadir})
+    pub fn new(datadir: String, date_format: String) -> Result<Self, String> {
+        Ok(Self{tasks: vec![], datadir, date_format})
     }
 
     pub fn load_tasks(&mut self) -> Result<(), String> {
@@ -31,7 +32,7 @@ impl TaskHandler {
         let mut task_vec = vec![];
         for str in task_string.lines() {
             if str != "" {
-                match Task::from_string(str) {
+                match Task::from_string(str, self.date_format.clone()) {
                     Ok(t) => task_vec.push(t),
                     Err(e) => return Err(e),
                 }
