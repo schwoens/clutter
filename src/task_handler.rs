@@ -27,9 +27,10 @@ impl TaskHandler {
         path.push_str("tasks.txt");
 
         let mut task_string = String::from("[ ] ");
-    task_string.push_str(&self.parse_date(due_date)?);
+        task_string.push_str(&self.parse_date(due_date)?);
         task_string.push_str(": ");
         task_string.push_str(description);
+        task_string.push_str("\n");
 
         match Task::from_string(&task_string, self.date_format.clone()) {
             Ok(_) => (),
