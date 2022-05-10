@@ -1,4 +1,6 @@
-use std::fs;
+use std::{fs::{self, OpenOptions}, io::Write};
+use chrono::NaiveDate;
+
 use crate::task::Task;
 
 pub struct TaskHandler {
@@ -16,6 +18,50 @@ impl TaskHandler {
     pub fn load_tasks(&mut self) -> Result<(), String> {
         self.tasks = self.create_task_vec()?;
         Ok(())
+    }
+
+    pub fn add_task(&mut self, due_date: &str, description: &str) -> Result<(), String> {
+        self.load_tasks()?;
+
+        let mut path = self.datadir.clone();
+        path.push_str("tasks.txt");
+
+        let mut task_string = String::from("[ ] ");
+    task_string.push_str(&self.parse_date(due_date)?);
+        task_string.push_str(": ");
+        task_string.push_str(description);
+
+        match Task::from_string(&task_string, self.date_format.clone()) {
+            Ok(_) => (),
+            Err(_) => return Err(format!("Invalid argument"))
+        }
+
+        let mut file = match OpenOptions::new()
+            .write(true)
+            .append(true)
+            .open(path) {
+                Ok(f) => f,
+                Err(e) => return Err(format!("Error while opening tasks.txt: {}", e)),
+            };
+        match file.write_all(task_string.as_bytes()) {
+            Ok(_) => Ok(()),
+            Err(e) => return Err(format!("Error while writing tasks.txt: {}", e)),
+        }
+    }
+
+    fn parse_date(&self, date: &str) -> Result<String, String> {
+       let d = match date {
+            "today" => chrono::Local::today().naive_local().to_string(),
+            "yesterday" => chrono::Local::today().naive_local().pred().to_string(),
+            "tomorrow" => chrono::Local::today().naive_local().succ().to_string(),
+            _ => date.to_string(),
+        };
+
+        match NaiveDate::parse_from_str(&d, "%Y-%m-%d") {
+            Ok(_) => (),
+            Err(_) => return Err(format!("Invalid due date")),
+        }
+        Ok(d)
     }
 
     fn read_tasks(&self) -> Result<String, String> {

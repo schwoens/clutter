@@ -47,7 +47,7 @@ impl Clutter {
                 "l" | "list" => {
                     let mut show_completed = false;
                     let mut only_today = false;
-                    for i in 1..args.len() {
+                    for i in 2..args.len() {
                         match args[i].as_str() {
                             "--show_completed" | "-c" => show_completed = true,
                             "--today" | "-t" => only_today = true,
@@ -57,6 +57,12 @@ impl Clutter {
                     self.list(show_completed, only_today)
                 },
                 "e" | "edit" => self.edit(),
+                "a" | "add" => {
+                    if args.len() < 3 {
+                        return Err("Missing argument".to_string());
+                    }
+                    self.add(args[2].clone())
+                },
                 _ => Err("Invalid argument".to_string())
             }
         } else {
@@ -80,7 +86,16 @@ impl Clutter {
         Ok(())
     }
 
-    pub fn edit(&self) -> Result<(), String>{
+    pub fn add(&mut self, arg: String) -> Result<(), String> {
+        let (due_date, description) = match arg.split_once(": ") {
+            Some(s) => s,
+            None => return Err("Invalid argument".to_string()),
+        };
+        self.task_handler.add_task(due_date, description)?;
+        Ok(())
+    }
+
+    pub fn edit(&self) -> Result<(), String> {
         let mut path = self.config.datadir.as_str().to_string();
         path.push_str("tasks.txt");
 
