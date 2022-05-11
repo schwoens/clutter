@@ -73,18 +73,28 @@ impl Clutter {
     pub fn list(&mut self, show_completed: bool, only_today: bool) -> Result<(), String> {
         self.task_handler.load_tasks()?;
 
-        if self.task_handler.get_overdue().is_empty() && self.task_handler.get_scheduled().is_empty() && self.task_handler.get_today().is_empty() {
-            if self.task_handler.get_completed(only_today).is_empty() {
+        let uncompleted_tasks_exist = !self.task_handler.get_overdue().is_empty() && 
+            !self.task_handler.get_scheduled().is_empty() && 
+            !self.task_handler.get_today().is_empty();
+
+        let completed_tasks_exist = !self.task_handler.get_completed(only_today).is_empty();
+
+        if show_completed {
+
+            if !completed_tasks_exist {
                 Self::print_string("No tasks".to_string(), self.config.notasks_color);
                 return Ok(())
             }
-            Self::print_string("No uncompleted tasks".to_string(), self.config.notasks_color);
-            return Ok(());
+
+            self.print_all(self.task_handler.get_completed(only_today), self.config.completed_color);
+        } else {
+            
+            if !uncompleted_tasks_exist {
+                Self::print_string("No tasks".to_string(), self.config.notasks_color);
+                return Ok(());
+            }
         }
 
-        if show_completed {
-            self.print_all(self.task_handler.get_completed(only_today), self.config.completed_color);
-        }
         if !only_today {
             self.print_all(self.task_handler.get_overdue(), self.config.overdue_color);
         }
