@@ -73,9 +73,9 @@ impl Clutter {
     pub fn list(&mut self, show_completed: bool, only_today: bool) -> Result<(), String> {
         self.task_handler.load_tasks()?;
 
-        let uncompleted_tasks_exist = !self.task_handler.get_overdue().is_empty() && 
-            !self.task_handler.get_scheduled().is_empty() && 
-            !self.task_handler.get_today().is_empty();
+        let uncompleted_tasks_exist = !(self.task_handler.get_overdue().is_empty() && 
+            self.task_handler.get_scheduled().is_empty() && 
+            self.task_handler.get_today().is_empty());
 
         let completed_tasks_exist = !self.task_handler.get_completed(only_today).is_empty();
 
@@ -83,7 +83,7 @@ impl Clutter {
 
             if !completed_tasks_exist {
                 Self::print_string("No tasks".to_string(), self.config.notasks_color);
-                return Ok(())
+                return Ok(());
             }
 
             self.print_all(self.task_handler.get_completed(only_today), self.config.completed_color);
