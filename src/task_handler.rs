@@ -21,10 +21,7 @@ impl TaskHandler {
     }
 
     pub fn add_task(&mut self, due_date: &str, description: &str) -> Result<(), String> {
-        self.load_tasks()?;
-
-        let mut path = self.datadir.clone();
-        path.push_str("tasks.txt");
+        let path = self.get_or_create_path()?;
 
         let mut task_string = String::from("[ ] ");
         task_string.push_str(&self.parse_date(due_date)?);
@@ -45,8 +42,8 @@ impl TaskHandler {
                 Err(e) => return Err(format!("Error while opening tasks.txt: {}", e)),
             };
         match file.write_all(task_string.as_bytes()) {
-            Ok(_) => Ok(()),
-            Err(e) => return Err(format!("Error while writing tasks.txt: {}", e)),
+            Ok(_) => return Ok(()),
+            Err(e) => Err(format!("Error while writing tasks.txt: {}", e)),
         }
     }
 
@@ -66,8 +63,7 @@ impl TaskHandler {
     }
 
     fn read_tasks(&self) -> Result<String, String> {
-        let mut path = self.datadir.clone();
-        path.push_str("tasks.txt");
+        let path = self.get_or_create_path()?;
         match fs::read_to_string(path) {
             Ok(s) => Ok(s),
             Err(e) => return Err(format!("Error while reading tasks.txt: {}", e)),
@@ -127,5 +123,19 @@ impl TaskHandler {
                 .filter(|t| t.is_completed())
                 .collect()
         }
+    }
+
+    pub fn get_or_create_path(&self) -> Result<String, String> {
+
+        let mut path = self.datadir.clone();
+        path.push_str("tasks.txt");
+
+        if !std::path::Path::new(&path).exists() {
+            match fs::File::create(&path) {
+                Ok(_) => (),
+                Err(e) => return Err(format!("Error while creating tasks.txt: {}", e)),
+            }
+        }
+        Ok(path)
     }
 }
