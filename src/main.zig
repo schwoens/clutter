@@ -46,3 +46,28 @@ fn handleArguments(args: [][:0]u8) !void {
         .delete => commands.delete(command_args),
     };
 }
+
+const Config = struct {
+    data_path: []const u8,
+};
+
+fn readConfigFile() Config {
+
+    var config: Config = .{
+        .data_path = std.fs.cwd()
+    }
+
+    var config_file = std.fs.openFileAbsolute("$XDG_CONFIG_HOME/clutter/clutter.conf", .{ .read = true });
+    if (config_file) |file| {
+        defer file.close();
+
+
+        var buf_reader = std.io.bufferedReader(file.reader());
+        var in_stream = buf_reader.reader();
+
+        var buf: [128]u8 = undefined;
+        while (try in_stream.readUnitlDelimiterOrEof(&buf, "\n")) |line| {
+
+        }
+    }
+}
